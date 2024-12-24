@@ -1,0 +1,32 @@
+name: RDP Setup
+
+on: [push]
+
+jobs:
+  setup-rdp:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install ngrok
+        run: |
+          curl -s https://bin.equinox.io/c/111111/ngrok-stable-windows-amd64.zip --output ngrok.zip
+          unzip ngrok.zip
+
+      - name: Start ngrok tunnel
+        run: |
+          ./ngrok.exe tcp 3389 --authtoken ${{ secrets.NGROK_AUTH_TOKEN }} &
+
+      - name: Setup RDP User
+        run: |
+          net user runneradmin ${{ secrets.RDP_PASSWORD }} /add
+          net localgroup administrators runneradmin /add
+
+      - name: Wait for ngrok to establish tunnel
+        run: sleep 10  # Adjust as necessary
+
+      - name: Output ngrok URL
+        run: |
+          curl http://localhost:4040/api/tunnels | jq '.tunnels[0].public_url'
